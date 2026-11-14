@@ -1,0 +1,39 @@
+{
+  "name": "whatsapp-support-assistant",
+  "version": "1.0.0",
+  "description": "WhatsApp Business Cloud API webhook assistant with signature verification, idempotent message handling and human handoff",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run",
+    "dev": "tsx --env-file-if-exists=.env src/index.ts",
+    "start": "node --env-file-if-exists=.env dist/index.js",
+    "simulate": "tsx --env-file-if-exists=.env scripts/simulate.ts",
+    "admin": "tsx --env-file-if-exists=.env src/admin.ts"
+  },
+  "keywords": [
+    "whatsapp",
+    "whatsapp-cloud-api",
+    "webhook",
+    "hmac",
+    "idempotency",
+    "human-handoff",
+    "zod",
+    "sqlite"
+  ],
+  "author": "Alejandro",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.13.9",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^5.1.0"
+  }
+}
