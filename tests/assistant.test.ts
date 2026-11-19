@@ -51,6 +51,15 @@ describe('replies', () => {
   });
 });
 
+describe('guardrails', () => {
+  it('rejects a text body over the 8192-character limit without replying', async () => {
+    const res = await assistant.handleWebhook(textMessage('a'.repeat(8193)));
+    expect(res.outcomes).toEqual(['invalid']);
+    expect(client.sent).toHaveLength(0);
+    expect(store.getConversation(USER).unknownStreak).toBe(0);
+  });
+});
+
 describe('idempotency', () => {
   it('answers a redelivered message id only once', async () => {
     const payload = textMessage('hello', { id: 'wamid.dup' });
@@ -90,6 +99,19 @@ describe('idempotency', () => {
   });
 });
 
+describe('batches and retries', () => {
+  it('after a failed send in a batch, the retry answers only the message that failed', async () => {
+    const payload = rawMessages([
+      { from: USER, id: 'wamid.b1', type: 'text', text: { body: 'hours' } },
+      { from: USER, id: 'wamid.b2', type: 'text', text: { body: 'address' } }
+    ]);
+    client.failNext = 1;
+    expect(await assistant.handleWebhook(payload)).toEqual({ outcomes: ['send_failed', 'replied'], retryable: true });
+    expect(await assistant.handleWebhook(payload)).toEqual({ outcomes: ['replied', 'duplicate'], retryable: false });
+    expect(client.sent.map((s) => s.body)).toEqual([REPLIES.location, REPLIES.hours]);
+  });
+});
+
 describe('handoff to a person', () => {
   it('hands off when the customer asks, then stays silent', async () => {
     expect((await assistant.handleWebhook(textMessage('I need a human'))).outcomes).toEqual(['handed_off']);
@@ -122,6 +144,15 @@ describe('handoff to a person', () => {
     expect(res.outcomes).toEqual(['replied']);
   });
 
+  it('after a release, the not-understood streak starts from zero', async () => {
+    await assistant.handleWebhook(textMessage('blah'));
+    await assistant.handleWebhook(textMessage('blah blah'));
+    expect(store.getConversation(USER)).toMatchObject({ mode: 'human', handoffReason: 'not_understood' });
+    assistant.releaseToBot(USER);
+    expect(store.getConversation(USER)).toMatchObject({ mode: 'bot', unknownStreak: 0, handoffReason: null });
+    expect((await assistant.handleWebhook(textMessage('blah once more'))).outcomes).toEqual(['replied']);
+  });
+
   it('releases a conversation back to the bot', async () => {
     await assistant.handleWebhook(textMessage('agent'));
     expect(assistant.releaseToBot(USER)).toBe(true);
@@ -136,6 +167,20 @@ describe('coexistence echoes (a person replies from the Business app)', () => {
     expect(store.getConversation(USER)).toMatchObject({ mode: 'human', handoffReason: 'human_replied_from_app' });
     expect((await assistant.handleWebhook(textMessage('hello'))).outcomes).toEqual(['silent_human_mode']);
     expect(client.sent).toHaveLength(0);
+  });
+
+  it('handles echoes addressed by user id, ignores malformed ones, and keeps the first takeover reason', async () => {
+    const byUserId = (id: string) => ({
+      object: 'whatsapp_business_account',
+      entry: [{ id: '0', changes: [{ field: 'smb_message_echoes', value: { metadata: { phone_number_id: PHONE_ID }, message_echoes: [{ id, to_user_id: 'US.9' }, { id: 'no-recipient' }] } }] }]
+    });
+    const res = await assistant.handleWebhook(byUserId('wamid.e1') as never);
+    expect(res.outcomes).toEqual(['echo_handoff', 'invalid']);
+    expect(store.getConversation('US.9')).toMatchObject({ mode: 'human', handoffReason: 'human_replied_from_app' });
+
+    await assistant.handleWebhook(textMessage('agent', { from: USER }));
+    expect((await assistant.handleWebhook(echo(USER))).outcomes).toEqual(['echo_ignored']);
+    expect(store.getConversation(USER).handoffReason).toBe('customer_request');
   });
 
   it('does not mistake an echo of its own API message for a person', async () => {

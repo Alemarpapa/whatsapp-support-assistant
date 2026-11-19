@@ -82,7 +82,7 @@ $ npm run admin -- list
 
 ```bash
 npm run typecheck   # strict TypeScript over src/, tests/ and scripts/
-npm test            # 65 Vitest tests
+npm test            # 73 Vitest tests
 ```
 
 ## 📱 Same number in the Business app and the API ("coexistence")

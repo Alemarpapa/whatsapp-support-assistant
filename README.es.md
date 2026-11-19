@@ -21,7 +21,7 @@ Un servidor webhook para la WhatsApp Business Cloud API. Responde preguntas simp
 
 ## Inicio rápido (sin cuenta de Meta)
 
-Requiere Node.js 22.9 o superior. Los comandos y la salida real están en [README.md](README.md#-quickstart-no-meta-account-needed): `npm run dev` levanta el servidor en modo mock y `npm run simulate` le envía mensajes firmados. `npm test` corre 65 tests de Vitest.
+Requiere Node.js 22.9 o superior. Los comandos y la salida real están en [README.md](README.md#-quickstart-no-meta-account-needed): `npm run dev` levanta el servidor en modo mock y `npm run simulate` le envía mensajes firmados. `npm test` corre 73 tests de Vitest.
 
 ## El mismo número en la app Business y en la API ("coexistencia")
 

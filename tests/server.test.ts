@@ -101,6 +101,15 @@ describe('POST /webhook', () => {
     expect((await post(body)).status).toBe(413);
   });
 
+  it('accepts a signed body of exactly 3 MB and rejects one byte more with 413, even if signed', async () => {
+    const json = JSON.stringify(textMessage('hello'));
+    const padded = (size: number) => json + ' '.repeat(size - Buffer.byteLength(json));
+    expect((await post(padded(MAX_BODY_BYTES))).status).toBe(200);
+    expect(client.sent).toHaveLength(1);
+    expect((await post(padded(MAX_BODY_BYTES + 1))).status).toBe(413);
+    expect(client.sent).toHaveLength(1);
+  });
+
   it('responds 404 for other paths and 405 for other methods', async () => {
     expect((await fetch(`${base}/`)).status).toBe(404);
     expect((await fetch(`${base}/webhook`, { method: 'DELETE' })).status).toBe(405);

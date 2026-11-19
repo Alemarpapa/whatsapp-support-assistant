@@ -23,6 +23,26 @@ describe('intent routing', () => {
   });
 });
 
+describe('intent routing: boundaries and priority', () => {
+  it('matches whole words only, case-insensitively, and the greeting only at the start', () => {
+    const cases: Array<[string, string]> = [
+      ['PLEASE GET ME AN AGENT!', 'human'],
+      ['opening a new account', 'unknown'],
+      ['our management team', 'unknown'],
+      ['oh hi there', 'unknown'],
+      ['Buenos días', 'greeting'],
+      ['¿Dónde están?', 'location']
+    ];
+    for (const [text, intent] of cases) expect(detectIntent(text), text).toBe(intent);
+  });
+
+  it('applies the documented order when several keywords appear', () => {
+    expect(detectIntent('thanks, what are your hours?')).toBe('hours');
+    expect(detectIntent('hola, gracias')).toBe('thanks');
+    expect(detectIntent('hello, what is your address?')).toBe('location');
+  });
+});
+
 describe('configuration', () => {
   const base = { WHATSAPP_APP_SECRET: 's3cret', WHATSAPP_VERIFY_TOKEN: 'v', WHATSAPP_PHONE_NUMBER_ID: '1' };
 

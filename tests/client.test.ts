@@ -45,4 +45,10 @@ describe('CloudApiWhatsAppClient (stubbed fetch)', () => {
     const client = new CloudApiWhatsAppClient({ ...opts, fetchImpl: fetchImpl as unknown as typeof fetch });
     await expect(client.sendText({ to: '1' }, 'x')).rejects.toThrow(/did not include a message id/);
   });
+
+  it('still throws a clean status-only error when the error body is not JSON', async () => {
+    const fetchImpl = async () => new Response('<html>Bad Gateway</html>', { status: 502 });
+    const client = new CloudApiWhatsAppClient({ ...opts, fetchImpl: fetchImpl as unknown as typeof fetch });
+    await expect(client.sendText({ to: '1' }, 'x')).rejects.toThrow(/^Graph API responded 502$/);
+  });
 });
